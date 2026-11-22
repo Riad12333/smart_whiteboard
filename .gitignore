@@ -1,0 +1,19 @@
+# Python virtual environment
+.venv/
+env/
+venv/
+ENV/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary test artifacts
+assets/test_record_temp.avi
+
+# IDE and Editor configurations
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

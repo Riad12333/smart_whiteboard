@@ -11,6 +11,10 @@ __pycache__/
 
 # Temporary test artifacts
 assets/test_record_temp.avi
+*.tmp
+
+# Pretrained large ONNX models (download via tools/download_models.py)
+assets/models/*.onnx
 
 # IDE and Editor configurations
 .vscode/

@@ -1,0 +1,118 @@
+{
+  "description": "Reference test fixture for Direct Linear Transform (DLT) homography solver and point mapping verification in Python and JavaScript.",
+  "camera_resolution": [
+    640,
+    480
+  ],
+  "board_resolution": [
+    1280,
+    720
+  ],
+  "calibration_pairs": {
+    "camera_src_corners": [
+      [
+        60.0,
+        40.0
+      ],
+      [
+        580.0,
+        40.0
+      ],
+      [
+        580.0,
+        440.0
+      ],
+      [
+        60.0,
+        440.0
+      ]
+    ],
+    "board_dst_corners": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        1280.0,
+        0.0
+      ],
+      [
+        1280.0,
+        720.0
+      ],
+      [
+        0.0,
+        720.0
+      ]
+    ]
+  },
+  "expected_homography_matrix_3x3": [
+    [
+      2.46153846,
+      0.0,
+      -147.69230769
+    ],
+    [
+      -0.0,
+      1.8,
+      -72.0
+    ],
+    [
+      -0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "test_points": [
+    {
+      "camera_point": [
+        60.0,
+        40.0
+      ],
+      "expected_board_point": [
+        -0.0,
+        0.0
+      ]
+    },
+    {
+      "camera_point": [
+        580.0,
+        40.0
+      ],
+      "expected_board_point": [
+        1280.0,
+        0.0
+      ]
+    },
+    {
+      "camera_point": [
+        320.0,
+        240.0
+      ],
+      "expected_board_point": [
+        640.0,
+        360.0
+      ]
+    },
+    {
+      "camera_point": [
+        190.0,
+        140.0
+      ],
+      "expected_board_point": [
+        320.0,
+        180.0
+      ]
+    },
+    {
+      "camera_point": [
+        450.0,
+        340.0
+      ],
+      "expected_board_point": [
+        960.0,
+        540.0
+      ]
+    }
+  ]
+}

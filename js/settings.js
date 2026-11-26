@@ -11,6 +11,8 @@ export const DEFAULT_SETTINGS = {
     frame_height: 480,
     fps_target: 60,
     fps_calc_window: 15,
+    mirror: true,
+    edge_margin_pct: 0.08,
   },
   board: {
     board_width: 1280,
@@ -44,6 +46,7 @@ export const DEFAULT_SETTINGS = {
   },
   interaction: {
     snap_radius: 75.0,
+    magnet_radius_px: 75.0,
     hover_scale: 1.08,
     animation_duration_ms: 150
   },

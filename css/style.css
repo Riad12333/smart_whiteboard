@@ -67,10 +67,10 @@ html, body {
   touch-action: none;
 }
 
-/* Floating Top Toolbar Pill */
+/* Floating Top Toolbar Pill (with safety margin from screen top edge) */
 .top-toolbar {
   position: absolute;
-  top: 14px;
+  top: 20px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -84,17 +84,17 @@ html, body {
   padding: 6px 14px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
   z-index: 50;
-  max-width: 96vw;
+  max-width: 94vw;
 }
 
-/* Distant pointing targets >= 90px */
+/* Compact size in MOUSE mode */
 .tool-btn {
-  min-width: 92px;
-  min-height: 40px;
+  min-width: 72px;
+  min-height: 36px;
   background: transparent;
   border: 1.5px solid transparent;
   border-radius: 20px;
-  padding: 6px 12px;
+  padding: 5px 10px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-main);
@@ -102,12 +102,32 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   transition: all 0.15s ease;
 }
 
+/* Enlarged targets (>= 90px) when body has .hand-mode (Main or Marqueur) */
+body.hand-mode .tool-btn {
+  min-width: 94px;
+  min-height: 44px;
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
+body.hand-mode .side-btn {
+  min-width: 100px;
+  min-height: 44px;
+  font-size: 13px;
+}
+
+body.hand-mode .color-swatch {
+  width: 44px;
+  height: 44px;
+}
+
 .tool-btn:hover,
-.tool-btn.snap-hover {
+.tool-btn.snap-hover,
+.tool-btn.hand-hover {
   background: var(--excali-purple-light);
   color: var(--excali-purple-dark);
   border-color: var(--excali-purple);
@@ -124,21 +144,95 @@ html, body {
   color: #ffffff;
 }
 
-.tool-select {
-  min-height: 40px;
-  background: var(--excali-card-bg);
-  border: 1.5px solid var(--excali-border);
-  border-radius: 20px;
-  padding: 6px 12px;
-  font-size: 13px;
+/* Mode Switcher Pill Group */
+.mode-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1f3f5;
+  border-radius: 24px;
+  padding: 3px;
+  border: 1px solid #dee2e6;
+}
+
+.mode-btn {
+  min-width: 68px;
+  min-height: 32px;
+  background: transparent;
+  border: 1.5px solid transparent;
+  border-radius: 18px;
+  padding: 4px 10px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-main);
   cursor: pointer;
-  outline: none;
+  transition: all 0.15s ease;
 }
 
-.tool-select:focus-visible {
-  outline: 3px solid var(--excali-blue);
+body.hand-mode .mode-btn {
+  min-width: 92px;
+  min-height: 40px;
+  font-size: 13px;
+}
+
+.mode-btn:hover,
+.mode-btn.hand-hover {
+  background: var(--excali-purple-light);
+  border-color: var(--excali-purple);
+  transform: scale(1.05);
+}
+
+.mode-btn.active {
+  background: var(--excali-purple);
+  color: #ffffff;
+}
+
+/* Global Hand Cursor Overlay (covers entire viewport above everything) */
+#hand-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Small Camera Preview Window (PiP) */
+.camera-preview-card {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #1e1e1e;
+  border: 2px solid var(--excali-border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+  z-index: 48;
+  display: none;
+  flex-direction: column;
+}
+
+.camera-preview-card.visible {
+  display: flex;
+}
+
+.camera-preview-header {
+  background: rgba(30, 30, 30, 0.92);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#camera-preview {
+  display: block;
+  width: 214px;
+  height: 160px;
+  background: #111;
 }
 
 /* Left Floating Drawing Panel (Colors, Thickness, Undo/Redo) */
@@ -187,7 +281,8 @@ html, body {
 }
 
 .color-swatch:hover,
-.color-swatch.snap-hover {
+.color-swatch.snap-hover,
+.color-swatch.hand-hover {
   transform: scale(1.15);
 }
 
@@ -210,7 +305,8 @@ html, body {
 }
 
 .side-btn:hover,
-.side-btn.snap-hover {
+.side-btn.snap-hover,
+.side-btn.hand-hover {
   background: var(--excali-purple-light);
   border-color: var(--excali-purple);
   transform: scale(1.04);
@@ -226,7 +322,8 @@ html, body {
 .sub-toolbar {
   position: absolute;
   bottom: 24px;
-  right: 24px;
+  left: 50%;
+  transform: translateX(-50%);
   display: none;
   gap: 8px;
   background: var(--excali-card-bg);

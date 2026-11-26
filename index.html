@@ -4,92 +4,93 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Smart Interactive Whiteboard — Web Edition (USTHB 2026-2027)</title>
-  <link rel="stylesheet" href="css/style.css?v=2.0.5">
+  <link rel="stylesheet" href="css/style.css?v=2.1.0">
 </head>
 <body>
   <div id="app-container">
-    <!-- Top Excalidraw-Style Floating Toolbar (Buttons >= 90px snap targets) -->
+    <!-- Top Excalidraw-Style Floating Toolbar -->
     <header class="top-toolbar" role="toolbar" aria-label="Navigation et outils principaux">
-      <button id="btn-nav-home" class="tool-btn snap-target active" aria-label="Accueil" title="Accueil (Retour menu)">
+      <button id="btn-nav-home" class="tool-btn active" data-hand-target data-action="nav:HOME" aria-label="Accueil" title="Accueil (Retour menu)">
         🏠 <span>Accueil</span>
       </button>
-      <button id="btn-nav-draw" class="tool-btn snap-target" aria-label="Dessiner" title="Dessin libre">
+      <button id="btn-nav-draw" class="tool-btn" data-hand-target data-action="nav:DRAWING" aria-label="Dessiner" title="Dessin libre">
         ✏️ <span>Dessin</span>
       </button>
-      <button id="btn-nav-images" class="tool-btn snap-target" aria-label="Images et Zoom" title="Images + Zoom">
+      <button id="btn-nav-images" class="tool-btn" data-hand-target data-action="nav:IMAGES" aria-label="Images et Zoom" title="Images + Zoom">
         🖼️ <span>Images</span>
       </button>
-      <button id="btn-nav-lesson" class="tool-btn snap-target" aria-label="Mini-leçon interactive" title="Mini-leçon CV">
+      <button id="btn-nav-lesson" class="tool-btn" data-hand-target data-action="nav:LESSON" aria-label="Mini-leçon interactive" title="Mini-leçon CV">
         🎓 <span>Leçon</span>
       </button>
 
-      <select id="select-mode" class="tool-select" title="Sélecteur du mode de détection" aria-label="Mode de détection">
-        <option value="HAND_ML">🖐️ Main (MediaPipe ML)</option>
-        <option value="MARKER">🟢 Marqueur (HSV)</option>
-        <option value="MOUSE" selected>🖱️ Souris (Simulation)</option>
-      </select>
+      <!-- Mode Switcher Buttons (Main / Marqueur / Souris) -->
+      <div class="mode-group" role="group" aria-label="Mode de détection">
+        <button id="btn-mode-hand" class="mode-btn" data-hand-target data-action="mode:HAND_ML" aria-label="Mode Main ML" title="Suivi de la main (MediaPipe)">🖐️ Main</button>
+        <button id="btn-mode-marker" class="mode-btn" data-hand-target data-action="mode:MARKER" aria-label="Mode Marqueur HSV" title="Suivi marqueur vert">🟢 Marqueur</button>
+        <button id="btn-mode-mouse" class="mode-btn active" data-hand-target data-action="mode:MOUSE" aria-label="Mode Souris" title="Mode Souris / Tactile">🖱️ Souris</button>
+      </div>
 
-      <button id="btn-remote-inspect" class="tool-btn snap-target" aria-label="Détecter les touches télécommande" title="Détecter touches (Touche T)">
+      <button id="btn-remote-inspect" class="tool-btn" data-hand-target data-action="inspect:toggle" aria-label="Détecter les touches télécommande" title="Détecter touches (Touche T)">
         🎮 <span>Touches</span>
       </button>
-      <button id="btn-reset-all" class="tool-btn snap-target" aria-label="Réinitialiser l'application" title="Reset global">
+      <button id="btn-reset-all" class="tool-btn" data-hand-target data-action="system:reset" aria-label="Réinitialiser l'application" title="Reset global">
         🔄 <span>Reset</span>
       </button>
-      <button id="btn-fullscreen" class="tool-btn snap-target" aria-label="Mode Plein Écran" title="Plein Écran (Touche F)">
+      <button id="btn-fullscreen" class="tool-btn" data-hand-target data-action="system:fullscreen" aria-label="Mode Plein Écran" title="Plein Écran (Touche F)">
         ⛶ <span>Plein Écran</span>
       </button>
     </header>
 
-    <!-- Left Floating Drawing Tools Panel (Colors, Thickness, Undo/Redo, Eraser) -->
+    <!-- Left Floating Drawing Tools Panel -->
     <aside id="side-panel" class="side-panel" role="region" aria-label="Outils de dessin">
       <div class="panel-section-title">Couleurs</div>
       <div class="color-grid">
-        <button class="color-swatch snap-target active" data-color="BLACK" style="background: #1e1e1e;" aria-label="Couleur Noir" title="Noir"></button>
-        <button class="color-swatch snap-target" data-color="BLUE" style="background: #1971c2;" aria-label="Couleur Bleu" title="Bleu"></button>
-        <button class="color-swatch snap-target" data-color="RED" style="background: #e03131;" aria-label="Couleur Rouge" title="Rouge"></button>
-        <button class="color-swatch snap-target" data-color="PURPLE" style="background: #6741d9;" aria-label="Couleur Violet" title="Violet"></button>
+        <button class="color-swatch active" data-hand-target data-action="color:BLACK" data-color="BLACK" style="background: #1e1e1e;" aria-label="Couleur Noir" title="Noir"></button>
+        <button class="color-swatch" data-hand-target data-action="color:BLUE" data-color="BLUE" style="background: #1971c2;" aria-label="Couleur Bleu" title="Bleu"></button>
+        <button class="color-swatch" data-hand-target data-action="color:RED" data-color="RED" style="background: #e03131;" aria-label="Couleur Rouge" title="Rouge"></button>
+        <button class="color-swatch" data-hand-target data-action="color:PURPLE" data-color="PURPLE" style="background: #6741d9;" aria-label="Couleur Violet" title="Violet"></button>
       </div>
 
       <div class="panel-section-title" style="margin-top: 4px;">Épaisseur</div>
-      <button class="side-btn snap-target active" data-thickness="7" aria-label="Épaisseur Moyenne">Moyen (7px)</button>
-      <button class="side-btn snap-target" data-thickness="3" aria-label="Épaisseur Fine">Fin (3px)</button>
-      <button class="side-btn snap-target" data-thickness="14" aria-label="Épaisseur Épaisse">Épais (14px)</button>
+      <button class="side-btn active" data-hand-target data-action="thickness:7" data-thickness="7" aria-label="Épaisseur Moyenne">Moyen (7px)</button>
+      <button class="side-btn" data-hand-target data-action="thickness:3" data-thickness="3" aria-label="Épaisseur Fine">Fin (3px)</button>
+      <button class="side-btn" data-hand-target data-action="thickness:14" data-thickness="14" aria-label="Épaisseur Épaisse">Épais (14px)</button>
 
       <div class="panel-section-title" style="margin-top: 4px;">Actions</div>
-      <button id="btn-tool-pen" class="side-btn snap-target active" aria-label="Outil Stylo">✏️ Stylo</button>
-      <button id="btn-tool-eraser" class="side-btn snap-target" aria-label="Outil Gomme">🧹 Gomme</button>
-      <button id="btn-tool-undo" class="side-btn snap-target" aria-label="Annuler le dernier trait">↩️ Annuler</button>
-      <button id="btn-tool-redo" class="side-btn snap-target" aria-label="Rétablir le trait annulé">↪️ Rétablir</button>
-      <button id="btn-tool-clear" class="side-btn snap-target" aria-label="Tout effacer">🗑️ Tout effacer</button>
+      <button id="btn-tool-pen" class="side-btn active" data-hand-target data-action="tool:PEN" aria-label="Outil Stylo">✏️ Stylo</button>
+      <button id="btn-tool-eraser" class="side-btn" data-hand-target data-action="tool:ERASER" aria-label="Outil Gomme">🧹 Gomme</button>
+      <button id="btn-tool-undo" class="side-btn" data-hand-target data-action="tool:UNDO" aria-label="Annuler le dernier trait">↩️ Annuler</button>
+      <button id="btn-tool-redo" class="side-btn" data-hand-target data-action="tool:REDO" aria-label="Rétablir le trait annulé">↪️ Rétablir</button>
+      <button id="btn-tool-clear" class="side-btn" data-hand-target data-action="tool:CLEAR" aria-label="Tout effacer">🗑️ Tout effacer</button>
     </aside>
 
     <!-- Sub-toolbar for Images Zoom -->
     <div id="sub-images" class="sub-toolbar" role="toolbar" aria-label="Contrôles de zoom image">
-      <button id="btn-zoom-out" class="tool-btn snap-target" aria-label="Zoom Arrière">➖ Zoom -</button>
-      <button id="btn-zoom-reset" class="tool-btn snap-target" aria-label="Réinitialiser Zoom">100%</button>
-      <button id="btn-zoom-in" class="tool-btn snap-target" aria-label="Zoom Avant">➕ Zoom +</button>
+      <button id="btn-zoom-out" class="tool-btn" data-hand-target data-action="zoom:out" aria-label="Zoom Arrière">➖ Zoom -</button>
+      <button id="btn-zoom-reset" class="tool-btn" data-hand-target data-action="zoom:reset" aria-label="Réinitialiser Zoom">100%</button>
+      <button id="btn-zoom-in" class="tool-btn" data-hand-target data-action="zoom:in" aria-label="Zoom Avant">➕ Zoom +</button>
     </div>
 
     <!-- Sub-toolbar for Lesson Navigation -->
     <div id="sub-lesson" class="sub-toolbar" role="toolbar" aria-label="Navigation mini-leçon">
-      <button id="btn-lesson-prev" class="tool-btn snap-target" aria-label="Diapositive précédente">⬅️ Précédent</button>
-      <button id="btn-lesson-next" class="tool-btn snap-target" aria-label="Diapositive suivante">Suivant ➡️</button>
+      <button id="btn-lesson-prev" class="tool-btn" data-hand-target data-action="lesson:prev" aria-label="Diapositive précédente">⬅️ Précédent</button>
+      <button id="btn-lesson-next" class="tool-btn" data-hand-target data-action="lesson:next" aria-label="Diapositive suivante">Suivant ➡️</button>
     </div>
 
     <!-- Privacy Guarantee Toast Pill -->
     <div id="privacy-toast" class="privacy-toast" role="status">
       <span>🔒 <strong>Confidentialité garantie :</strong> Le flux vidéo reste 100% en local dans votre navigateur.</span>
-      <button id="btn-close-privacy" aria-label="Fermer le message de confidentialité" title="Fermer">✕</button>
+      <button id="btn-close-privacy" data-hand-target aria-label="Fermer le message de confidentialité" title="Fermer">✕</button>
     </div>
 
     <!-- Main Canvas Surface -->
     <canvas id="board-canvas" width="1280" height="720" aria-label="Surface du tableau blanc interactif"></canvas>
 
-    <!-- Key Inspector Modal (Partie 4) -->
+    <!-- Key Inspector Modal -->
     <div id="inspector-modal" class="inspector-modal" role="dialog" aria-label="Inspecteur de touches télécommande">
       <div class="inspector-header">
         <span>🎮 Inspecteur Télécommande (HID)</span>
-        <button id="btn-close-inspector" aria-label="Fermer l'inspecteur" title="Fermer">✕</button>
+        <button id="btn-close-inspector" data-hand-target aria-label="Fermer l'inspecteur" title="Fermer">✕</button>
       </div>
       <p style="color: var(--text-muted); font-size: 11px; margin-bottom: 8px;">
         Pressez une touche de votre télécommande physique ou clavier :
@@ -112,6 +113,15 @@
         • Clic Droit : <code>PageUp</code>, <code>ArrowLeft</code>, <code>p</code>, <code>Backspace</code>
       </div>
     </div>
+
+    <!-- Small Camera Preview Screen (PiP) -->
+    <aside id="camera-preview-card" class="camera-preview-card" aria-label="Aperçu caméra en direct">
+      <div class="camera-preview-header">
+        <span>📷 Aperçu Caméra</span>
+        <span id="cam-preview-badge" class="badge badge-green">LIVE</span>
+      </div>
+      <canvas id="camera-preview" width="214" height="160"></canvas>
+    </aside>
 
     <!-- HUD Telemetry Card -->
     <aside id="hud-card" class="hud-card" aria-live="polite">
@@ -136,9 +146,12 @@
         <span id="hud-pointer-coords">u: 640.0, v: 360.0</span>
       </div>
     </aside>
+
+    <!-- Global Viewport Hand Cursor Overlay (covers toolbars + canvas) -->
+    <canvas id="hand-cursor" aria-hidden="true"></canvas>
   </div>
 
   <!-- Main ES Module Script -->
-  <script type="module" src="js/main.js?v=2.0.5"></script>
+  <script type="module" src="js/main.js?v=2.1.0"></script>
 </body>
 </html>

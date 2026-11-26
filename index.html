@@ -2,46 +2,118 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Smart Interactive Whiteboard — Web Edition (USTHB 2026-2027)</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div id="app-container">
-    <!-- Top Excalidraw-Style Floating Toolbar -->
-    <header class="top-toolbar" role="toolbar" aria-label="Outils du tableau blanc">
-      <button id="btn-pen" class="tool-btn active" title="Stylo de dessin (Touche 1)">
-        ✏️ <span>Stylo</span>
+    <!-- Top Excalidraw-Style Floating Toolbar (Buttons >= 90px snap targets) -->
+    <header class="top-toolbar" role="toolbar" aria-label="Navigation et outils principaux">
+      <button id="btn-nav-home" class="tool-btn snap-target active" aria-label="Accueil" title="Accueil (Retour menu)">
+        🏠 <span>Accueil</span>
       </button>
-      <button id="btn-eraser" class="tool-btn" title="Gomme (Touche 2)">
-        🧹 <span>Gomme</span>
+      <button id="btn-nav-draw" class="tool-btn snap-target" aria-label="Dessiner" title="Dessin libre">
+        ✏️ <span>Dessin</span>
       </button>
-      <button id="btn-clear" class="tool-btn" title="Effacer tout le tableau">
-        🗑️ <span>Effacer</span>
+      <button id="btn-nav-images" class="tool-btn snap-target" aria-label="Images et Zoom" title="Images + Zoom">
+        🖼️ <span>Images</span>
       </button>
-      <button id="btn-undo" class="tool-btn" title="Annuler le dernier trait (Ctrl+Z)">
-        ↩️ <span>Annuler</span>
+      <button id="btn-nav-lesson" class="tool-btn snap-target" aria-label="Mini-leçon interactive" title="Mini-leçon CV">
+        🎓 <span>Leçon</span>
       </button>
-      <select id="select-mode" class="tool-select" title="Sélecteur du mode de détection" aria-label="Sélecteur de mode">
+
+      <select id="select-mode" class="tool-select" title="Sélecteur du mode de détection" aria-label="Mode de détection">
         <option value="HAND_ML">🖐️ Main (MediaPipe ML)</option>
         <option value="MARKER">🟢 Marqueur (HSV)</option>
         <option value="MOUSE" selected>🖱️ Souris (Simulation)</option>
       </select>
-      <button id="btn-fullscreen" class="tool-btn" title="Plein Écran (Touche F)">
+
+      <button id="btn-remote-inspect" class="tool-btn snap-target" aria-label="Détecter les touches télécommande" title="Détecter touches (Touche T)">
+        🎮 <span>Touches</span>
+      </button>
+      <button id="btn-reset-all" class="tool-btn snap-target" aria-label="Réinitialiser l'application" title="Reset global">
+        🔄 <span>Reset</span>
+      </button>
+      <button id="btn-fullscreen" class="tool-btn snap-target" aria-label="Mode Plein Écran" title="Plein Écran (Touche F)">
         ⛶ <span>Plein Écran</span>
       </button>
     </header>
 
+    <!-- Left Floating Drawing Tools Panel (Colors, Thickness, Undo/Redo, Eraser) -->
+    <aside id="side-panel" class="side-panel" role="region" aria-label="Outils de dessin">
+      <div class="panel-section-title">Couleurs</div>
+      <div class="color-grid">
+        <button class="color-swatch snap-target active" data-color="BLACK" style="background: #1e1e1e;" aria-label="Couleur Noir" title="Noir"></button>
+        <button class="color-swatch snap-target" data-color="BLUE" style="background: #1971c2;" aria-label="Couleur Bleu" title="Bleu"></button>
+        <button class="color-swatch snap-target" data-color="RED" style="background: #e03131;" aria-label="Couleur Rouge" title="Rouge"></button>
+        <button class="color-swatch snap-target" data-color="PURPLE" style="background: #6741d9;" aria-label="Couleur Violet" title="Violet"></button>
+      </div>
+
+      <div class="panel-section-title" style="margin-top: 4px;">Épaisseur</div>
+      <button class="side-btn snap-target active" data-thickness="7" aria-label="Épaisseur Moyenne">Moyen (7px)</button>
+      <button class="side-btn snap-target" data-thickness="3" aria-label="Épaisseur Fine">Fin (3px)</button>
+      <button class="side-btn snap-target" data-thickness="14" aria-label="Épaisseur Épaisse">Épais (14px)</button>
+
+      <div class="panel-section-title" style="margin-top: 4px;">Actions</div>
+      <button id="btn-tool-pen" class="side-btn snap-target active" aria-label="Outil Stylo">✏️ Stylo</button>
+      <button id="btn-tool-eraser" class="side-btn snap-target" aria-label="Outil Gomme">🧹 Gomme</button>
+      <button id="btn-tool-undo" class="side-btn snap-target" aria-label="Annuler le dernier trait">↩️ Annuler</button>
+      <button id="btn-tool-redo" class="side-btn snap-target" aria-label="Rétablir le trait annulé">↪️ Rétablir</button>
+      <button id="btn-tool-clear" class="side-btn snap-target" aria-label="Tout effacer">🗑️ Tout effacer</button>
+    </aside>
+
+    <!-- Sub-toolbar for Images Zoom -->
+    <div id="sub-images" class="sub-toolbar" role="toolbar" aria-label="Contrôles de zoom image">
+      <button id="btn-zoom-out" class="tool-btn snap-target" aria-label="Zoom Arrière">➖ Zoom -</button>
+      <button id="btn-zoom-reset" class="tool-btn snap-target" aria-label="Réinitialiser Zoom">100%</button>
+      <button id="btn-zoom-in" class="tool-btn snap-target" aria-label="Zoom Avant">➕ Zoom +</button>
+    </div>
+
+    <!-- Sub-toolbar for Lesson Navigation -->
+    <div id="sub-lesson" class="sub-toolbar" role="toolbar" aria-label="Navigation mini-leçon">
+      <button id="btn-lesson-prev" class="tool-btn snap-target" aria-label="Diapositive précédente">⬅️ Précédent</button>
+      <button id="btn-lesson-next" class="tool-btn snap-target" aria-label="Diapositive suivante">Suivant ➡️</button>
+    </div>
+
     <!-- Privacy Guarantee Toast Pill -->
     <div id="privacy-toast" class="privacy-toast" role="status">
-      <span>🔒 <strong>Confidentialité garantie :</strong> Le flux vidéo est traité 100% en local dans votre navigateur. Aucune image ni donnée n'est transmise à un serveur.</span>
-      <button id="btn-close-privacy" title="Fermer ce message">✕</button>
+      <span>🔒 <strong>Confidentialité garantie :</strong> Le flux vidéo reste 100% en local dans votre navigateur.</span>
+      <button id="btn-close-privacy" aria-label="Fermer le message de confidentialité" title="Fermer">✕</button>
     </div>
 
     <!-- Main Canvas Surface -->
     <canvas id="board-canvas" width="1280" height="720" aria-label="Surface du tableau blanc interactif"></canvas>
 
-    <!-- HUD Telemetry Card (Technical Supervisor Overlay) -->
+    <!-- Key Inspector Modal (Partie 4) -->
+    <div id="inspector-modal" class="inspector-modal" role="dialog" aria-label="Inspecteur de touches télécommande">
+      <div class="inspector-header">
+        <span>🎮 Inspecteur Télécommande (HID)</span>
+        <button id="btn-close-inspector" aria-label="Fermer l'inspecteur" title="Fermer">✕</button>
+      </div>
+      <p style="color: var(--text-muted); font-size: 11px; margin-bottom: 8px;">
+        Pressez une touche de votre télécommande physique ou clavier :
+      </p>
+      <div class="key-box">
+        <span>event.key :</span>
+        <strong id="insp-key" style="color: var(--excali-purple-dark);">—</strong>
+      </div>
+      <div class="key-box">
+        <span>event.code :</span>
+        <strong id="insp-code" style="color: var(--excali-purple-dark);">—</strong>
+      </div>
+      <div class="key-box">
+        <span>Interprétation :</span>
+        <span id="insp-event" class="badge badge-yellow">EN ATTENTE</span>
+      </div>
+      <div style="margin-top: 10px; font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+        <strong>Touches reconnues :</strong><br>
+        • Clic Gauche : <code>PageDown</code>, <code>ArrowRight</code>, <code>n</code>, <code>Espace</code><br>
+        • Clic Droit : <code>PageUp</code>, <code>ArrowLeft</code>, <code>p</code>, <code>Backspace</code>
+      </div>
+    </div>
+
+    <!-- HUD Telemetry Card -->
     <aside id="hud-card" class="hud-card" aria-live="polite">
       <div class="hud-title">
         <span>Télémétrie Superviseur</span>

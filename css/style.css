@@ -103,6 +103,24 @@ html, body {
   color: #ffffff;
 }
 
+.tool-select {
+  background: var(--excali-card-bg);
+  border: 1.5px solid var(--excali-border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.tool-select:hover, .tool-select:focus {
+  border-color: var(--excali-purple);
+  box-shadow: 0 0 0 2px var(--excali-purple-light);
+}
+
 /* HUD Telemetry Card (Supervisor Dashboard) */
 .hud-card {
   position: absolute;

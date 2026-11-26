@@ -105,7 +105,8 @@ class WebWhiteboardApplication {
     this.mapper = new CoordinateMapper(this.calibrator);
 
     const magnetRadius = this.settings.interaction?.magnet_radius_px ?? this.settings.interaction?.snap_radius ?? 75.0;
-    this.interaction = new InteractionManager(this.canvas, this.ui, this.drawing, magnetRadius);
+    const dwellMs = this.settings.interaction?.dwell_click_ms ?? 900;
+    this.interaction = new InteractionManager(this.canvas, this.ui, this.drawing, magnetRadius, dwellMs);
 
     this.resizeCanvases();
     window.addEventListener("resize", () => this.resizeCanvases());
@@ -468,7 +469,12 @@ class WebWhiteboardApplication {
           marginPct
         );
 
-        const resolved = this.interaction.updateGlobalPointer(rawClientX, rawClientY);
+        const resolved = this.interaction.updateGlobalPointer(
+          rawClientX,
+          rawClientY,
+          Boolean(rawPtr.pinching),
+          now
+        );
 
         this.pointer = {
           ...rawPtr,
@@ -477,10 +483,13 @@ class WebWhiteboardApplication {
           insideCanvas: resolved.insideCanvas,
           u: resolved.u,
           v: resolved.v,
-          snapped: resolved.snapped
+          snapped: resolved.snapped,
+          dwellProgress: resolved.dwellProgress,
+          pinching: resolved.pinching
         };
 
-        if (this.ui.activeView !== "HOME" && this.drawing.isDrawing && resolved.insideCanvas) {
+        // Support remote-toggled drawing when not using pinch
+        if (this.ui.activeView !== "HOME" && this.drawing.isDrawing && !this.interaction.pinchDrawing && resolved.insideCanvas) {
           this.drawing.continueStroke(resolved.u, resolved.v);
         }
       } else {
@@ -566,18 +575,29 @@ class WebWhiteboardApplication {
 
     ctx.save();
 
-    // Inner dot (blue when pen is down, red when hovering)
-    ctx.fillStyle = this.drawing.isDrawing ? "#1971c2" : "#e03131";
+    // Inner dot (blue when pen is down / pinching, red when hovering)
+    const isPenActive = this.drawing.isDrawing || this.pointer.pinching;
+    ctx.fillStyle = isPenActive ? "#1971c2" : "#e03131";
     ctx.beginPath();
-    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.arc(cx, cy, isPenActive ? 8 : 6, 0, Math.PI * 2);
     ctx.fill();
 
     // Outer ring (purple when snapped to button, green when free)
-    ctx.strokeStyle = this.pointer.snapped ? "#6965db" : (this.drawing.isDrawing ? "#1971c2" : "#2f9e44");
+    const ringRadius = this.pointer.snapped ? 20 : 14;
+    ctx.strokeStyle = this.pointer.snapped ? "#6965db" : (isPenActive ? "#1971c2" : "#2f9e44");
     ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.arc(cx, cy, this.pointer.snapped ? 18 : 14, 0, Math.PI * 2);
+    ctx.arc(cx, cy, ringRadius, 0, Math.PI * 2);
     ctx.stroke();
+
+    // Dwell-Click progress arc (fills up over 0.9s when hovering a button)
+    if (this.pointer.dwellProgress > 0.02) {
+      ctx.strokeStyle = "#6741d9";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(cx, cy, ringRadius + 5, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * this.pointer.dwellProgress);
+      ctx.stroke();
+    }
 
     ctx.restore();
   }

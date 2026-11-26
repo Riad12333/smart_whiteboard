@@ -47,6 +47,7 @@ export const DEFAULT_SETTINGS = {
   interaction: {
     snap_radius: 75.0,
     magnet_radius_px: 75.0,
+    dwell_click_ms: 900,
     hover_scale: 1.08,
     animation_duration_ms: 150
   },

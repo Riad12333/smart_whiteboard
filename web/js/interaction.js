@@ -173,18 +173,32 @@ export function resolveHandPointer(clientX, clientY, options = {}) {
 }
 
 export class InteractionManager {
-  constructor(canvas, uiInterface, drawingEngine, magnetRadiusPx = 75.0) {
+  constructor(canvas, uiInterface, drawingEngine, magnetRadiusPx = 75.0, dwellClickMs = 900) {
     this.canvas = canvas;
     this.ui = uiInterface;
     this.drawing = drawingEngine;
     this.magnetRadiusPx = magnetRadiusPx;
+    this.dwellClickMs = dwellClickMs;
     this.hoveredTarget = null;
+
+    // Dwell-click state
+    this.dwellTarget = null;
+    this.dwellStartTime = 0;
+    this.dwellCooldownUntil = 0;
+    this.dwellProgress = 0.0;
+
+    // Pinch state
+    this.prevPinching = false;
+    this.pinchDrawing = false;
+    this.pinchClickCooldownUntil = 0;
   }
 
   /**
-   * Resolve global viewport position, update .hand-hover CSS state, and return canvas (u, v).
+   * Resolve global viewport position, update .hand-hover CSS state,
+   * handle Dwell-Click & Pinch gestures, and return canvas (u, v).
    */
-  updateGlobalPointer(rawClientX, rawClientY) {
+  updateGlobalPointer(rawClientX, rawClientY, isPinching = false, nowMs = null) {
+    const now = nowMs !== null ? nowMs : performance.now();
     const resolved = resolveHandPointer(rawClientX, rawClientY, {
       magnetRadiusPx: this.magnetRadiusPx
     });
@@ -208,11 +222,59 @@ export class InteractionManager {
       this.canvas.height
     );
 
+    // 1. Dwell-click (hovering a button for dwellClickMs clicks automatically)
+    if (this.hoveredTarget) {
+      if (this.hoveredTarget !== this.dwellTarget) {
+        this.dwellTarget = this.hoveredTarget;
+        this.dwellStartTime = now;
+        this.dwellProgress = 0.0;
+      } else if (now >= this.dwellCooldownUntil) {
+        this.dwellProgress = Math.min(1.0, (now - this.dwellStartTime) / this.dwellClickMs);
+        if (this.dwellProgress >= 1.0) {
+          this.hoveredTarget.click();
+          this.ui.addRipple(canvasPos.u, canvasPos.v);
+          this.dwellCooldownUntil = now + 1200;
+          this.dwellStartTime = now + 1200;
+          this.dwellProgress = 0.0;
+        }
+      } else {
+        this.dwellProgress = 0.0;
+      }
+    } else {
+      this.dwellTarget = null;
+      this.dwellProgress = 0.0;
+    }
+
+    // 2. Pinch-to-Click / Pinch-to-Draw (Thumb tip L4 + Index tip L8)
+    if (isPinching && !this.prevPinching) {
+      if (this.hoveredTarget && now >= this.pinchClickCooldownUntil) {
+        this.hoveredTarget.click();
+        this.pinchClickCooldownUntil = now + 500;
+        this.dwellCooldownUntil = now + 1000;
+      } else if (canvasPos.insideCanvas && this.ui.activeView !== "HOME") {
+        this.pinchDrawing = true;
+        this.ui.addRipple(canvasPos.u, canvasPos.v);
+        this.drawing.startStroke(canvasPos.u, canvasPos.v);
+      }
+    } else if (isPinching && this.prevPinching) {
+      if (this.pinchDrawing && canvasPos.insideCanvas && this.ui.activeView !== "HOME") {
+        this.drawing.continueStroke(canvasPos.u, canvasPos.v);
+      }
+    } else if (!isPinching && this.prevPinching) {
+      if (this.pinchDrawing) {
+        this.drawing.endStroke();
+        this.pinchDrawing = false;
+      }
+    }
+    this.prevPinching = isPinching;
+
     return {
       clientX: resolved.clientX,
       clientY: resolved.clientY,
       hoveredTarget: resolved.hoveredTarget,
       snapped: resolved.snapped,
+      dwellProgress: this.dwellProgress,
+      pinching: isPinching,
       insideCanvas: canvasPos.insideCanvas,
       u: canvasPos.u,
       v: canvasPos.v
@@ -224,6 +286,13 @@ export class InteractionManager {
       this.hoveredTarget.classList.remove("hand-hover");
       this.hoveredTarget = null;
     }
+    this.dwellTarget = null;
+    this.dwellProgress = 0.0;
+    if (this.pinchDrawing) {
+      this.drawing.endStroke();
+      this.pinchDrawing = false;
+    }
+    this.prevPinching = false;
   }
 
   /**

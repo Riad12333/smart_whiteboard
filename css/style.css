@@ -1,0 +1,184 @@
+/*
+ * Excalidraw-Inspired Style for Smart Interactive Whiteboard Web Version
+ * Off-white dot grid, floating pill toolbars, and responsive full-window canvas.
+ */
+
+:root {
+  --excali-bg: #fbfbfc;
+  --excali-grid-dot: #dadee5;
+  --excali-card-bg: #ffffff;
+  --excali-border: #282828;
+  --excali-purple: #6965db;
+  --excali-purple-dark: #5c56df;
+  --excali-purple-light: #eeedfe;
+  --excali-blue: #1971c2;
+  --color-draw-black: #1e1e1e;
+  --color-draw-blue: #1971c2;
+  --color-draw-red: #e03131;
+  --color-draw-purple: #6741d9;
+  --text-main: #1e1e1e;
+  --text-muted: #73737d;
+  --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--excali-bg);
+  background-image: radial-gradient(var(--excali-grid-dot) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+  font-family: var(--font-family);
+  color: var(--text-main);
+}
+
+/* App container */
+#app-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Main Interactive Canvas */
+#board-canvas {
+  display: block;
+  background-color: transparent;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(40, 40, 40, 0.15);
+  border-radius: 6px;
+  cursor: crosshair;
+}
+
+/* Floating Top Toolbar Pill */
+.top-toolbar {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--excali-card-bg);
+  border: 1.5px solid var(--excali-border);
+  border-radius: 30px;
+  padding: 6px 14px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  z-index: 50;
+}
+
+.tool-btn {
+  background: transparent;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.tool-btn:hover {
+  background: var(--excali-purple-light);
+  color: var(--excali-purple-dark);
+  transform: scale(1.05);
+}
+
+.tool-btn.active {
+  background: var(--excali-purple);
+  color: #ffffff;
+}
+
+/* HUD Telemetry Card (Supervisor Dashboard) */
+.hud-card {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid var(--excali-border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  font-size: 12px;
+  line-height: 1.5;
+  z-index: 40;
+  min-width: 260px;
+}
+
+.hud-title {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: var(--excali-purple-dark);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hud-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.badge-green { background: #d3f9d8; color: #2b8a3e; }
+.badge-yellow { background: #fff3bf; color: #f08c00; }
+.badge-red { background: #ffe3e3; color: #c92a2a; }
+
+/* Privacy Banner */
+.privacy-toast {
+  position: absolute;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(238, 237, 254, 0.95);
+  border: 1px solid var(--excali-purple);
+  color: var(--excali-purple-dark);
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(105, 101, 219, 0.15);
+  z-index: 45;
+  animation: fadeIn 0.4s ease;
+}
+
+.privacy-toast button {
+  background: transparent;
+  border: none;
+  font-weight: 700;
+  color: var(--excali-purple-dark);
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, -10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}

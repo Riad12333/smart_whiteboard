@@ -1,0 +1,120 @@
+{
+  "camera": {
+    "camera_source": 0,
+    "frame_width": 640,
+    "frame_height": 480,
+    "fps_target": 60,
+    "fps_calc_window": 15,
+    "video_test_path": "assets/test_video.avi",
+    "record_duration_sec": 5,
+    "record_fourcc": "XVID"
+  },
+  "board": {
+    "board_width": 1280,
+    "board_height": 720,
+    "ui_fullscreen_default": false,
+    "dashboard_enabled_default": false,
+    "main_window_name": "Smart Interactive Whiteboard (Projected Surface)",
+    "dashboard_window_name": "Technical Supervisor Dashboard (Camera & Telemetry)"
+  },
+  "palette": {
+    "excali_bg": [251, 251, 252],
+    "excali_grid_dot": [218, 222, 229],
+    "excali_card_bg": [255, 255, 255],
+    "excali_card_border": [40, 40, 40],
+    "excali_purple": [105, 101, 219],
+    "excali_purple_dark": [92, 86, 223],
+    "excali_purple_light": [238, 237, 254],
+    "excali_blue": [25, 113, 194],
+    "color_draw_black": [30, 30, 30],
+    "color_draw_blue": [25, 113, 194],
+    "color_draw_red": [224, 49, 49],
+    "color_draw_purple": [103, 65, 217],
+    "excali_text_main": [30, 30, 30],
+    "excali_text_muted": [115, 115, 125]
+  },
+  "pen_thickness": {
+    "thin": 3,
+    "medium": 7,
+    "thick": 14,
+    "eraser": 35
+  },
+  "interaction": {
+    "snap_radius": 75.0,
+    "hover_scale": 1.08,
+    "animation_duration_ms": 150,
+    "font_handwritten": "assets/fonts/PatrickHand-Regular.ttf"
+  },
+  "calibration": {
+    "calibration_data_path": "config/calibration_data.json",
+    "default_camera_corners": [
+      [60.0, 40.0],
+      [580.0, 40.0],
+      [580.0, 440.0],
+      [60.0, 440.0]
+    ],
+    "validation_board_points": [
+      [640.0, 360.0],
+      [320.0, 180.0],
+      [960.0, 180.0],
+      [320.0, 540.0],
+      [960.0, 540.0]
+    ]
+  },
+  "detection_skin": {
+    "skin_cr_min": 133,
+    "skin_cr_max": 173,
+    "skin_cb_min": 77,
+    "skin_cb_max": 127,
+    "calib_roi_size": 60,
+    "calib_k_std": 2.0,
+    "morph_iterations": 1,
+    "ccl_downscale": 4,
+    "min_contour_area": 500,
+    "fingertip_method": "FARTHEST"
+  },
+  "detection_marker": {
+    "marker_h_min": 35,
+    "marker_h_max": 85,
+    "marker_s_min": 80,
+    "marker_s_max": 255,
+    "marker_v_min": 60,
+    "marker_v_max": 255
+  },
+  "detection_ml": {
+    "palm_model_path": "assets/models/palm_detection_mediapipe_2023feb.onnx",
+    "hand_model_path": "assets/models/handpose_estimation_mediapipe_2023feb.onnx",
+    "palm_score_thresh": 0.6,
+    "hand_score_thresh": 0.7,
+    "nms_thresh": 0.3,
+    "require_pointing": false,
+    "detect_every_n": 1,
+    "downscale_factor": 1.0,
+    "board_margin": 30.0,
+    "filter_type": "ONE_EURO",
+    "one_euro_min_cutoff": 1.0,
+    "one_euro_beta": 0.007,
+    "one_euro_d_cutoff": 1.0
+  },
+  "stabilization": {
+    "smoothing_alpha": 0.35,
+    "deadzone_radius": 3.5,
+    "max_lost_frames": 5,
+    "detection_mode_default": "SKIN"
+  },
+  "remote": {
+    "debounce_sec": 0.25,
+    "next_keycodes": [2555904, 83, 2228224, 86, 110, 78, 100, 68, 32],
+    "prev_keycodes": [2424832, 2490368, 81, 2162688, 85, 112, 80, 103, 71, 8]
+  },
+  "features": {
+    "default_lesson_image": "assets/lesson_diagram.png",
+    "zoom_min": 0.5,
+    "zoom_max": 3.5,
+    "zoom_step": 0.3
+  },
+  "app": {
+    "name": "Smart Interactive Whiteboard (USTHB 2026-2027)",
+    "version": "2.0.0"
+  }
+}

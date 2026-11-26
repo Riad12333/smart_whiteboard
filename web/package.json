@@ -1,0 +1,6 @@
+{
+  "name": "smart-whiteboard-web",
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Static web client for Smart Interactive Whiteboard (USTHB 2026-2027)"
+}

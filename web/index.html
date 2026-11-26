@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Interactive Whiteboard — Web Edition (USTHB 2026-2027)</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app-container">
+    <!-- Top Excalidraw-Style Floating Toolbar -->
+    <header class="top-toolbar" role="toolbar" aria-label="Outils du tableau blanc">
+      <button id="btn-pen" class="tool-btn active" title="Stylo de dessin (Touche 1)">
+        ✏️ <span>Stylo</span>
+      </button>
+      <button id="btn-eraser" class="tool-btn" title="Gomme (Touche 2)">
+        🧹 <span>Gomme</span>
+      </button>
+      <button id="btn-clear" class="tool-btn" title="Effacer tout le tableau">
+        🗑️ <span>Effacer</span>
+      </button>
+      <button id="btn-undo" class="tool-btn" title="Annuler le dernier trait (Ctrl+Z)">
+        ↩️ <span>Annuler</span>
+      </button>
+      <button id="btn-mode-toggle" class="tool-btn" title="Basculer Mode Souris / Caméra (Touche M)">
+        🖱️ <span id="label-mode">Mode : Souris</span>
+      </button>
+      <button id="btn-fullscreen" class="tool-btn" title="Plein Écran (Touche F)">
+        ⛶ <span>Plein Écran</span>
+      </button>
+    </header>
+
+    <!-- Privacy Guarantee Toast Pill -->
+    <div id="privacy-toast" class="privacy-toast" role="status">
+      <span>🔒 <strong>Confidentialité garantie :</strong> Le flux vidéo est traité 100% en local dans votre navigateur. Aucune image ni donnée n'est transmise à un serveur.</span>
+      <button id="btn-close-privacy" title="Fermer ce message">✕</button>
+    </div>
+
+    <!-- Main Canvas Surface -->
+    <canvas id="board-canvas" width="1280" height="720" aria-label="Surface du tableau blanc interactif"></canvas>
+
+    <!-- HUD Telemetry Card (Technical Supervisor Overlay) -->
+    <aside id="hud-card" class="hud-card" aria-live="polite">
+      <div class="hud-title">
+        <span>Télémétrie Superviseur</span>
+        <span id="hud-badge-mode" class="badge badge-yellow">SOURIS</span>
+      </div>
+      <div class="hud-row">
+        <span>Boucle Animation :</span>
+        <strong id="hud-loop-fps">60.0 FPS</strong>
+      </div>
+      <div class="hud-row">
+        <span>Flux Caméra :</span>
+        <span id="hud-cam-status">En attente...</span>
+      </div>
+      <div class="hud-row">
+        <span>Calibration DLT :</span>
+        <strong id="hud-calib-status">Active (8x8 Gauss)</strong>
+      </div>
+      <div class="hud-row">
+        <span>Pointeur :</span>
+        <span id="hud-pointer-coords">u: 640.0, v: 360.0</span>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Main ES Module Script -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

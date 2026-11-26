@@ -312,9 +312,27 @@ class WebWhiteboardApplication {
       });
     });
 
-    // Side Panel: Pen, Eraser, Undo, Redo, Clear
+    // Side Panel: Pen, Eraser, Hold-to-Draw, Undo, Redo, Clear
+    const btnPenHold = document.getElementById("btn-pen-hold");
     const btnPen = document.getElementById("btn-tool-pen");
     const btnEraser = document.getElementById("btn-tool-eraser");
+
+    const syncHoldBtn = () => {
+      if (!btnPenHold) return;
+      btnPenHold.textContent = this.drawing.isDrawing ? "✍️ Tracer : ON" : "✍️ Tracer : OFF";
+      btnPenHold.classList.toggle("active", this.drawing.isDrawing);
+    };
+
+    btnPenHold?.addEventListener("click", () => {
+      if (!this.drawing.isDrawing) {
+        this.drawing.startEmptyStroke();
+        this.ui.showToast("Stylo posé : bougez la main sur le tableau !");
+      } else {
+        this.drawing.endStroke();
+        this.ui.showToast("Stylo levé");
+      }
+      syncHoldBtn();
+    });
 
     btnPen?.addEventListener("click", () => {
       this.drawing.setTool("PEN");

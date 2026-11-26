@@ -2,5 +2,8 @@
   "name": "smart-whiteboard-web",
   "version": "2.0.0",
   "type": "module",
-  "description": "Static web client for Smart Interactive Whiteboard (USTHB 2026-2027)"
+  "description": "Static web client for Smart Interactive Whiteboard (USTHB 2026-2027)",
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^1.2.3"
+  }
 }

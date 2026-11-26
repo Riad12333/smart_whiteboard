@@ -22,9 +22,11 @@
       <button id="btn-undo" class="tool-btn" title="Annuler le dernier trait (Ctrl+Z)">
         ↩️ <span>Annuler</span>
       </button>
-      <button id="btn-mode-toggle" class="tool-btn" title="Basculer Mode Souris / Caméra (Touche M)">
-        🖱️ <span id="label-mode">Mode : Souris</span>
-      </button>
+      <select id="select-mode" class="tool-select" title="Sélecteur du mode de détection" aria-label="Sélecteur de mode">
+        <option value="HAND_ML">🖐️ Main (MediaPipe ML)</option>
+        <option value="MARKER">🟢 Marqueur (HSV)</option>
+        <option value="MOUSE" selected>🖱️ Souris (Simulation)</option>
+      </select>
       <button id="btn-fullscreen" class="tool-btn" title="Plein Écran (Touche F)">
         ⛶ <span>Plein Écran</span>
       </button>

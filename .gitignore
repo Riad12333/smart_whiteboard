@@ -4,6 +4,12 @@ env/
 venv/
 ENV/
 
+# Node modules
+node_modules/
+web/node_modules/
+package-lock.json
+web/package-lock.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

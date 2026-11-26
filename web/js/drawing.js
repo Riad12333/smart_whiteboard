@@ -44,6 +44,12 @@ export class DrawingEngine {
     this.penThickness = Number(px);
   }
 
+  startEmptyStroke() {
+    this.isDrawing = true;
+    const thickness = this.tool === "ERASER" ? this.eraserThickness : this.penThickness;
+    this.currentStroke = create_stroke(this.tool, this.color, thickness);
+  }
+
   startStroke(u, v) {
     this.isDrawing = true;
     const thickness = this.tool === "ERASER" ? this.eraserThickness : this.penThickness;

@@ -302,9 +302,9 @@ export class WebHandMLDetector {
     const pinchDist = Math.hypot(lms[4][0] - lms[8][0], lms[4][1] - lms[8][1]);
     const pinchRatio = pinchDist / palmSize;
     if (this.wasPinching) {
-      this.wasPinching = pinchRatio < 0.43;
+      this.wasPinching = pinchRatio < 0.58;
     } else {
-      this.wasPinching = pinchRatio < 0.33;
+      this.wasPinching = pinchRatio < 0.46;
     }
 
     return {

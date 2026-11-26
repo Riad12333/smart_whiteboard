@@ -113,8 +113,25 @@ class WebWhiteboardApplication {
     this.setupPointerListeners();
     this.setupUIListeners();
 
+    const camPreviewBadge = document.getElementById("cam-preview-badge");
+    if (camPreviewBadge) {
+      camPreviewBadge.textContent = "ML CHARGEMENT...";
+      camPreviewBadge.className = "badge badge-yellow";
+    }
+
     this.mlDetector.init("./models/wasm", "./models/hand_landmarker.task").then((success) => {
-      if (success) console.log("[App] ML HandLandmarker ready.");
+      if (success) {
+        console.log("[App] ML HandLandmarker ready.");
+        if (camPreviewBadge) {
+          camPreviewBadge.textContent = "ML PRET";
+          camPreviewBadge.className = "badge badge-green";
+        }
+      } else {
+        if (camPreviewBadge) {
+          camPreviewBadge.textContent = "ML ERREUR";
+          camPreviewBadge.className = "badge badge-red";
+        }
+      }
     });
 
     const camRes = await this.camera.open(

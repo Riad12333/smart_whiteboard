@@ -124,17 +124,32 @@ export class WebHandMLDetector {
       console.log("[WebHandMLDetector] Initializing local MediaPipe Vision WASM...");
       const vision = await FilesetResolver.forVisionTasks(wasmPath);
 
-      this.landmarker = await HandLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: modelPath,
-          delegate: "GPU"
-        },
-        runningMode: "VIDEO",
-        numHands: 2,
-        minHandDetectionConfidence: 0.6,
-        minHandPresenceConfidence: 0.6,
-        minTrackingConfidence: 0.6
-      });
+      try {
+        this.landmarker = await HandLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: modelPath,
+            delegate: "GPU"
+          },
+          runningMode: "VIDEO",
+          numHands: 2,
+          minHandDetectionConfidence: 0.6,
+          minHandPresenceConfidence: 0.6,
+          minTrackingConfidence: 0.6
+        });
+      } catch (gpuErr) {
+        console.warn("[WebHandMLDetector] GPU delegate unavailable, falling back to CPU:", gpuErr.message);
+        this.landmarker = await HandLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: modelPath,
+            delegate: "CPU"
+          },
+          runningMode: "VIDEO",
+          numHands: 2,
+          minHandDetectionConfidence: 0.6,
+          minHandPresenceConfidence: 0.6,
+          minTrackingConfidence: 0.6
+        });
+      }
 
       this.isReady = true;
       console.log("[WebHandMLDetector] HandLandmarker loaded successfully from local assets.");

@@ -114,6 +114,7 @@ export class WebHandMLDetector {
     this.lastSmoothed = null;
     this.lostFramesCount = 0;
     this.boardPolygon = null;
+    this.wasPinching = false;
   }
 
   /**
@@ -295,6 +296,17 @@ export class WebHandMLDetector {
     this.lastPos = [rawX, rawY];
     this.lostFramesCount = 0;
 
+    // Scale-invariant Pinch detection (Thumb tip L4 to Index tip L8 vs Palm size L0-L9)
+    const lms = best.landmarks;
+    const palmSize = Math.max(10.0, Math.hypot(lms[9][0] - lms[0][0], lms[9][1] - lms[0][1]));
+    const pinchDist = Math.hypot(lms[4][0] - lms[8][0], lms[4][1] - lms[8][1]);
+    const pinchRatio = pinchDist / palmSize;
+    if (this.wasPinching) {
+      this.wasPinching = pinchRatio < 0.43;
+    } else {
+      this.wasPinching = pinchRatio < 0.33;
+    }
+
     return {
       detected: true,
       x: Math.round(smX * 100) / 100,
@@ -306,6 +318,7 @@ export class WebHandMLDetector {
       v: 0.0,
       score: best.score,
       pointing: best.pointing,
+      pinching: this.wasPinching,
       box: best.box,
       landmarks: best.landmarks,
       inference_time_ms: Math.round((performance.now() - t0) * 10) / 10
@@ -317,6 +330,7 @@ export class WebHandMLDetector {
     if (this.lostFramesCount > this.maxLostFrames) {
       this.lastPos = null;
       this.lastSmoothed = null;
+      this.wasPinching = false;
       this.fx.reset();
       this.fy.reset();
     }
@@ -331,6 +345,7 @@ export class WebHandMLDetector {
       v: 0.0,
       score: 0.0,
       pointing: false,
+      pinching: false,
       box: null,
       landmarks: null,
       inference_time_ms: Math.round(latencyMs * 10) / 10

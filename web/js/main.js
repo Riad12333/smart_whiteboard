@@ -1,13 +1,13 @@
 /**
- * Main Web Controller for Smart Interactive Whiteboard (Partie 1, 2 & 3).
+ * Main Web Controller for Smart Interactive Whiteboard (Parties 1 to 5).
  * Integrates:
  *   - Asynchronous settings initialization (config/settings.json)
  *   - getUserMedia camera acquisition with graceful fallback to MOUSE mode
  *   - Pure DLT projective homography & mapping (Gauss-Jordan solver)
  *   - Mode selector: Main (MediaPipe Tasks ML) / Marqueur (HSV) / Souris (Simulation)
- *   - Live MediaPipe 21 3D landmarks skeleton rendering with highlighted index pointer
- *   - requestAnimationFrame loop with real-time FPS profiling
- *   - Responsive canvas scaling and drawing engine with Undo / Redo
+ *   - Presentation Remote listener + Key Inspector modal
+ *   - Excalidraw UI: HOME, DRAWING, IMAGES (+ Zoom), LESSON (+ Annotations)
+ *   - Magnetic cursor snapping (SNAP_RADIUS = 75px) & visual feedback
  */
 
 import { loadSettings, getSettings } from "./settings.js";
@@ -16,13 +16,10 @@ import { BoardCalibrator } from "./calibration.js";
 import { CoordinateMapper } from "./mapping.js";
 import { WebHandMLDetector } from "./detection_ml.js";
 import { WebMarkerDetector } from "./detection_marker.js";
-import {
-  bresenham_line,
-  create_stroke,
-  add_point_to_stroke,
-  undo_stroke,
-  redo_stroke,
-} from "./core_logic.js";
+import { RemoteHandler } from "./remote.js";
+import { DrawingEngine, VISION_SAFE_PALETTE } from "./drawing.js";
+import { WhiteboardInterface } from "./interface.js";
+import { InteractionManager } from "./interaction.js";
 
 const HAND_CONNECTIONS = [
   [0, 1], [1, 2], [2, 3], [3, 4],
@@ -43,9 +40,15 @@ class WebWhiteboardApplication {
     this.calibrator = null;
     this.mapper = null;
 
-    // Detectors (Partie 3)
+    // Detectors & Remote
     this.mlDetector = new WebHandMLDetector();
     this.markerDetector = new WebMarkerDetector(4);
+    this.remote = new RemoteHandler();
+
+    // Drawing, Interface & Interaction (Partie 5)
+    this.drawing = new DrawingEngine();
+    this.ui = new WhiteboardInterface(this.canvas, this.drawing);
+    this.interaction = null;
 
     // Active mode: "HAND_ML", "MARKER", or "MOUSE"
     this.mode = "MOUSE";
@@ -60,22 +63,14 @@ class WebWhiteboardApplication {
       area: 1200,
       u: 640.0,
       v: 360.0,
+      snapped_u: 640.0,
+      snapped_v: 360.0,
       score: 1.0,
       pointing: true,
       box: null,
       landmarks: null,
       inference_time_ms: 0.0
     };
-
-    // Drawing state
-    this.currentTool = "PEN"; // "PEN" or "ERASER"
-    this.penColor = [30, 30, 30]; // Black default
-    this.penThickness = 7;
-    this.eraserThickness = 35;
-    this.isDrawing = false;
-    this.currentStroke = null;
-    this.strokeHistory = [];
-    this.redoStack = [];
 
     // Loop & FPS telemetry
     this.lastLoopTime = performance.now();
@@ -98,28 +93,32 @@ class WebWhiteboardApplication {
     // 1. Load settings JSON
     this.settings = await loadSettings("config/settings.json");
 
-    // 2. Initialize geometry & calibration (Partie 2)
+    // 2. Initialize geometry & calibration
     this.calibrator = new BoardCalibrator(this.settings.board.board_width, this.settings.board.board_height);
     this.mapper = new CoordinateMapper(this.calibrator);
+    this.interaction = new InteractionManager(
+      this.canvas,
+      this.ui,
+      this.drawing,
+      this.settings.interaction?.snap_radius ?? 75.0
+    );
 
     // 3. Setup canvas responsive sizing
     this.resizeCanvas();
     window.addEventListener("resize", () => this.resizeCanvas());
 
-    // 4. Attach mouse and touch listeners
+    // 4. Attach mouse, touch, and UI listeners
     this.setupPointerListeners();
-
-    // 5. Attach UI button listeners
     this.setupUIListeners();
 
-    // 6. Asynchronously initialize local MediaPipe Tasks wasm in the background (Partie 3)
+    // 5. Asynchronously initialize local MediaPipe Tasks wasm
     this.mlDetector.init("./models/wasm", "./models/hand_landmarker.task").then((success) => {
       if (success) {
-        console.log("[App] ML HandLandmarker ready. Available in mode selector.");
+        console.log("[App] ML HandLandmarker ready.");
       }
     });
 
-    // 7. Request camera access
+    // 6. Request camera access
     const camRes = await this.camera.open(
       this.settings.camera.frame_width,
       this.settings.camera.frame_height
@@ -135,14 +134,14 @@ class WebWhiteboardApplication {
       this.updateModeUI();
     }
 
-    // 8. Start real-time render loop
+    // 7. Start real-time render loop
     requestAnimationFrame((t) => this.renderLoop(t));
   }
 
   resizeCanvas() {
-    const margin = 40;
+    const margin = window.innerWidth <= 768 ? 12 : 40;
     const maxW = window.innerWidth - margin;
-    const maxH = window.innerHeight - 100;
+    const maxH = window.innerHeight - (window.innerWidth <= 768 ? 90 : 100);
 
     const baseW = this.settings ? this.settings.board.board_width : 1280;
     const baseH = this.settings ? this.settings.board.board_height : 720;
@@ -184,27 +183,24 @@ class WebWhiteboardApplication {
         this.pointer.x = u;
         this.pointer.y = v;
 
-        if (this.isDrawing && this.currentStroke) {
-          this.currentStroke = add_point_to_stroke(this.currentStroke, u, v);
+        if (this.ui.activeView !== "HOME") {
+          this.drawing.continueStroke(u, v);
         }
       }
     };
 
     const onPointerDown = (e) => {
-      const [u, v] = getCanvasCoords(e);
-      this.isDrawing = true;
-      const thickness = this.currentTool === "PEN" ? this.penThickness : this.eraserThickness;
-      this.currentStroke = create_stroke(this.currentTool, this.penColor, thickness);
-      this.currentStroke = add_point_to_stroke(this.currentStroke, u, v);
+      if (this.mode === "MOUSE" && this.ui.activeView !== "HOME") {
+        const [u, v] = getCanvasCoords(e);
+        this.ui.addRipple(u, v);
+        this.drawing.startStroke(u, v);
+      }
     };
 
     const onPointerUp = () => {
-      if (this.isDrawing && this.currentStroke && this.currentStroke.points.length > 0) {
-        this.strokeHistory.push(this.currentStroke);
-        this.redoStack = [];
+      if (this.mode === "MOUSE") {
+        this.drawing.endStroke();
       }
-      this.isDrawing = false;
-      this.currentStroke = null;
     };
 
     this.canvas.addEventListener("mousemove", onPointerMove);
@@ -217,35 +213,105 @@ class WebWhiteboardApplication {
   }
 
   setupUIListeners() {
-    const btnPen = document.getElementById("btn-pen");
-    const btnEraser = document.getElementById("btn-eraser");
-    const btnClear = document.getElementById("btn-clear");
-    const btnUndo = document.getElementById("btn-undo");
-    const btnFullscreen = document.getElementById("btn-fullscreen");
-    const btnClosePrivacy = document.getElementById("btn-close-privacy");
+    // Top Navigation Buttons
+    const navHome = document.getElementById("btn-nav-home");
+    const navDraw = document.getElementById("btn-nav-draw");
+    const navImages = document.getElementById("btn-nav-images");
+    const navLesson = document.getElementById("btn-nav-lesson");
+    const navBtns = [navHome, navDraw, navImages, navLesson];
 
-    btnPen.addEventListener("click", () => {
-      this.currentTool = "PEN";
+    const sidePanel = document.getElementById("side-panel");
+    const subImages = document.getElementById("sub-images");
+    const subLesson = document.getElementById("sub-lesson");
+
+    const switchView = (viewName, activeBtn) => {
+      this.ui.setView(viewName);
+      navBtns.forEach(b => b && b.classList.remove("active"));
+      if (activeBtn) activeBtn.classList.add("active");
+
+      // Show drawing side panel in all active annotation views
+      if (viewName === "HOME") {
+        sidePanel.classList.remove("visible");
+      } else {
+        sidePanel.classList.add("visible");
+      }
+
+      subImages.classList.toggle("visible", viewName === "IMAGES");
+      subLesson.classList.toggle("visible", viewName === "LESSON");
+    };
+
+    if (navHome) navHome.addEventListener("click", () => switchView("HOME", navHome));
+    if (navDraw) navDraw.addEventListener("click", () => switchView("DRAWING", navDraw));
+    if (navImages) navImages.addEventListener("click", () => switchView("IMAGES", navImages));
+    if (navLesson) navLesson.addEventListener("click", () => switchView("LESSON", navLesson));
+
+    // Side Panel: Colors
+    const swatches = document.querySelectorAll(".color-swatch");
+    swatches.forEach(sw => {
+      sw.addEventListener("click", () => {
+        swatches.forEach(s => s.classList.remove("active"));
+        sw.classList.add("active");
+        const colorKey = sw.dataset.color;
+        if (VISION_SAFE_PALETTE[colorKey]) {
+          this.drawing.setColor(VISION_SAFE_PALETTE[colorKey]);
+          document.getElementById("btn-tool-pen")?.classList.add("active");
+          document.getElementById("btn-tool-eraser")?.classList.remove("active");
+        }
+      });
+    });
+
+    // Side Panel: Thickness
+    const thickBtns = document.querySelectorAll("[data-thickness]");
+    thickBtns.forEach(tb => {
+      tb.addEventListener("click", () => {
+        thickBtns.forEach(b => b.classList.remove("active"));
+        tb.classList.add("active");
+        this.drawing.setThickness(Number(tb.dataset.thickness));
+      });
+    });
+
+    // Side Panel: Pen, Eraser, Undo, Redo, Clear
+    const btnPen = document.getElementById("btn-tool-pen");
+    const btnEraser = document.getElementById("btn-tool-eraser");
+    const btnUndo = document.getElementById("btn-tool-undo");
+    const btnRedo = document.getElementById("btn-tool-redo");
+    const btnClear = document.getElementById("btn-tool-clear");
+
+    if (btnPen) btnPen.addEventListener("click", () => {
+      this.drawing.setTool("PEN");
       btnPen.classList.add("active");
-      btnEraser.classList.remove("active");
+      btnEraser?.classList.remove("active");
     });
 
-    btnEraser.addEventListener("click", () => {
-      this.currentTool = "ERASER";
+    if (btnEraser) btnEraser.addEventListener("click", () => {
+      this.drawing.setTool("ERASER");
       btnEraser.classList.add("active");
-      btnPen.classList.remove("active");
+      btnPen?.classList.remove("active");
     });
 
-    btnClear.addEventListener("click", () => {
-      this.strokeHistory = [];
-      this.redoStack = [];
-      this.currentStroke = null;
+    if (btnUndo) btnUndo.addEventListener("click", () => this.drawing.undo());
+    if (btnRedo) btnRedo.addEventListener("click", () => this.drawing.redo());
+    if (btnClear) btnClear.addEventListener("click", () => {
+      this.drawing.clear();
+      this.ui.showToast("Tableau effacé");
     });
 
-    btnUndo.addEventListener("click", () => {
-      [this.strokeHistory, this.redoStack] = undo_stroke(this.strokeHistory, this.redoStack);
+    // Images Zoom Controls
+    document.getElementById("btn-zoom-in")?.addEventListener("click", () => this.ui.zoomIn());
+    document.getElementById("btn-zoom-out")?.addEventListener("click", () => this.ui.zoomOut());
+    document.getElementById("btn-zoom-reset")?.addEventListener("click", () => this.ui.resetZoom());
+
+    // Lesson Navigation Controls
+    document.getElementById("btn-lesson-prev")?.addEventListener("click", () => this.ui.prevLessonSlide());
+    document.getElementById("btn-lesson-next")?.addEventListener("click", () => this.ui.nextLessonSlide());
+
+    // Global Reset
+    document.getElementById("btn-reset-all")?.addEventListener("click", () => {
+      this.ui.resetAll();
+      switchView("HOME", navHome);
     });
 
+    // Detection Mode Selector
     if (this.selectMode) {
       this.selectMode.addEventListener("change", async (e) => {
         const targetMode = e.target.value;
@@ -268,37 +334,78 @@ class WebWhiteboardApplication {
       });
     }
 
-    btnFullscreen.addEventListener("click", () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      } else {
-        document.exitFullscreen().catch(() => {});
-      }
-    });
-
-    if (btnClosePrivacy) {
-      btnClosePrivacy.addEventListener("click", () => {
-        this.privacyToast.style.display = "none";
+    // Fullscreen Toggle
+    const btnFullscreen = document.getElementById("btn-fullscreen");
+    if (btnFullscreen) {
+      btnFullscreen.addEventListener("click", () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
       });
     }
 
-    // Keyboard shortcuts
+    // Key Inspector Modal (Partie 4)
+    const btnRemoteInspect = document.getElementById("btn-remote-inspect");
+    const inspectorModal = document.getElementById("inspector-modal");
+    const btnCloseInspector = document.getElementById("btn-close-inspector");
+    const inspKey = document.getElementById("insp-key");
+    const inspCode = document.getElementById("insp-code");
+    const inspEvent = document.getElementById("insp-event");
+
+    const toggleInspector = () => {
+      const isVisible = inspectorModal.style.display === "block";
+      inspectorModal.style.display = isVisible ? "none" : "block";
+    };
+
+    if (btnRemoteInspect) btnRemoteInspect.addEventListener("click", toggleInspector);
+    if (btnCloseInspector) btnCloseInspector.addEventListener("click", () => { inspectorModal.style.display = "none"; });
+
+    document.getElementById("btn-close-privacy")?.addEventListener("click", () => {
+      this.privacyToast.style.display = "none";
+    });
+
+    // Keyboard & Presentation Remote Listener
     window.addEventListener("keydown", (e) => {
+      const remoteRes = this.remote.processKeyEvent(e);
+
+      // Update Key Inspector
+      if (inspKey) inspKey.textContent = `"${e.key}"`;
+      if (inspCode) inspCode.textContent = `"${e.code}"`;
+      if (inspEvent) {
+        if (remoteRes && remoteRes.event === "LEFT_CLICK") {
+          inspEvent.textContent = "LEFT_CLICK (Clic Gauche)";
+          inspEvent.className = "badge badge-green";
+        } else if (remoteRes && remoteRes.event === "RIGHT_CLICK") {
+          inspEvent.textContent = "RIGHT_CLICK (Clic Droit)";
+          inspEvent.className = "badge badge-blue";
+        } else {
+          inspEvent.textContent = "AUTRE TOUCHE";
+          inspEvent.className = "badge badge-yellow";
+        }
+      }
+
+      if (remoteRes && remoteRes.event && this.interaction) {
+        this.interaction.handleRemoteEvent(remoteRes.event, this.pointer.snapped_u, this.pointer.snapped_v);
+      }
+
       if (e.key === "m" || e.key === "M") {
         if (this.mode === "HAND_ML") this.mode = "MARKER";
         else if (this.mode === "MARKER") this.mode = "MOUSE";
         else this.mode = "HAND_ML";
         if (this.selectMode) this.selectMode.value = this.mode;
         this.updateModeUI();
+      } else if (e.key === "t" || e.key === "T") {
+        toggleInspector();
       } else if (e.key === "f" || e.key === "F") {
-        btnFullscreen.click();
+        btnFullscreen?.click();
       } else if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) {
         e.preventDefault();
-        btnUndo.click();
-      } else if (e.key === "1") {
-        btnPen.click();
-      } else if (e.key === "2") {
-        btnEraser.click();
+        this.drawing.undo();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === "y" || e.key === "Y")) {
+        e.preventDefault();
+        this.drawing.redo();
       }
     });
   }
@@ -326,14 +433,11 @@ class WebWhiteboardApplication {
     if (dt > 0) {
       const instantFps = 1000.0 / dt;
       this.loopTimes.push(instantFps);
-      if (this.loopTimes.length > 20) {
-        this.loopTimes.shift();
-      }
-      const sum = this.loopTimes.reduce((acc, v) => acc + v, 0);
-      this.loopFps = Math.round((sum / this.loopTimes.length) * 10) / 10;
+      if (this.loopTimes.length > 20) this.loopTimes.shift();
+      this.loopFps = Math.round((this.loopTimes.reduce((a, b) => a + b, 0) / this.loopTimes.length) * 10) / 10;
     }
 
-    // 2. Perform Computer Vision Tracking (Partie 3)
+    // 2. Computer Vision Tracking
     if (this.camera.hasCamera && (this.mode === "HAND_ML" || this.mode === "MARKER")) {
       let rawPtr = null;
       if (this.mode === "HAND_ML" && this.mlDetector.isReady) {
@@ -345,76 +449,48 @@ class WebWhiteboardApplication {
       if (rawPtr && rawPtr.detected) {
         this.pointer = this.mapper.mapPointer(rawPtr);
 
-        // If drawing via pointing hand
-        if (this.pointer.pointing && this.isDrawing && this.currentStroke) {
-          this.currentStroke = add_point_to_stroke(this.currentStroke, this.pointer.u, this.pointer.v);
+        // Apply magnetic cursor snapping
+        const snap = this.interaction.applyMagneticSnap(this.pointer.u, this.pointer.v);
+        this.pointer.snapped_u = snap.u;
+        this.pointer.snapped_v = snap.v;
+
+        // If pen is down via remote click, draw at snapped position
+        if (this.ui.activeView !== "HOME" && this.drawing.isDrawing) {
+          this.drawing.continueStroke(this.pointer.snapped_u, this.pointer.snapped_v);
         }
       } else if (rawPtr) {
         this.pointer.detected = false;
       }
+    } else {
+      // Mouse mode magnetic snap
+      const snap = this.interaction.applyMagneticSnap(this.pointer.u, this.pointer.v);
+      this.pointer.snapped_u = snap.u;
+      this.pointer.snapped_v = snap.v;
     }
 
-    // 3. Clear canvas with crisp off-white background
-    this.ctx.fillStyle = "#fbfbfc";
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    // 3. Render UI & Drawing Strokes
+    this.ui.render(this.ctx);
 
-    // 4. Render strokes history
-    this.renderStrokes();
-
-    // 5. Render active pointer target & hand skeleton
+    // 4. Render Active Pointer & Hand Skeleton
     if (this.pointer.detected) {
       this.renderPointerCursor();
     }
 
-    // 6. Update HUD telemetry
+    // 5. Update HUD telemetry
     this.updateHUD();
 
     requestAnimationFrame((t) => this.renderLoop(t));
   }
 
-  renderStrokes() {
-    const allStrokes = [...this.strokeHistory];
-    if (this.currentStroke && this.currentStroke.points.length > 0) {
-      allStrokes.push(this.currentStroke);
-    }
-
-    for (const stroke of allStrokes) {
-      const pts = stroke.points;
-      if (!pts || pts.length === 0) continue;
-
-      this.ctx.save();
-      this.ctx.lineWidth = stroke.thickness;
-      this.ctx.lineCap = "round";
-      this.ctx.lineJoin = "round";
-
-      if (stroke.tool === "ERASER") {
-        this.ctx.strokeStyle = "#fbfbfc";
-      } else {
-        const [r, g, b] = stroke.color;
-        this.ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
-      }
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(pts[0][0], pts[0][1]);
-      for (let i = 1; i < pts.length; i++) {
-        this.ctx.lineTo(pts[i][0], pts[i][1]);
-      }
-      this.ctx.stroke();
-      this.ctx.restore();
-    }
-  }
-
   renderPointerCursor() {
-    const u = this.pointer.u;
-    const v = this.pointer.v;
+    const u = this.pointer.snapped_u;
+    const v = this.pointer.snapped_v;
 
     this.ctx.save();
 
-    // If 21 landmarks are present (HAND_ML mode), render mapped skeleton preview
     if (this.pointer.landmarks && this.pointer.landmarks.length === 21) {
       const mappedLms = this.pointer.landmarks.map(p => this.mapper.mapPoint(p[0], p[1]));
 
-      // Draw bones
       this.ctx.strokeStyle = "rgba(105, 101, 219, 0.45)";
       this.ctx.lineWidth = 3;
       for (const [p1, p2] of HAND_CONNECTIONS) {
@@ -424,7 +500,6 @@ class WebWhiteboardApplication {
         this.ctx.stroke();
       }
 
-      // Draw joint dots
       for (let i = 0; i < 21; i++) {
         if (i !== 8) {
           this.ctx.fillStyle = "rgba(25, 113, 194, 0.7)";
@@ -435,13 +510,13 @@ class WebWhiteboardApplication {
       }
     }
 
-    // Active Pointer Tip (Landmark 8 or Marker Centroid)
-    this.ctx.fillStyle = "#e03131";
+    // Active pointer tip
+    this.ctx.fillStyle = this.drawing.isDrawing ? "#1971c2" : "#e03131";
     this.ctx.beginPath();
     this.ctx.arc(u, v, 6, 0, Math.PI * 2);
     this.ctx.fill();
 
-    this.ctx.strokeStyle = "#2f9e44";
+    this.ctx.strokeStyle = this.drawing.isDrawing ? "#1971c2" : "#2f9e44";
     this.ctx.lineWidth = 2.5;
     this.ctx.beginPath();
     this.ctx.arc(u, v, 14, 0, Math.PI * 2);
@@ -451,13 +526,11 @@ class WebWhiteboardApplication {
   }
 
   updateHUD() {
-    if (this.hudLoopFps) {
-      this.hudLoopFps.textContent = `${this.loopFps.toFixed(1)} FPS`;
-    }
+    if (this.hudLoopFps) this.hudLoopFps.textContent = `${this.loopFps.toFixed(1)} FPS`;
     if (this.hudPointerCoords) {
       if (this.pointer.detected) {
         const infStr = this.pointer.inference_time_ms > 0 ? ` (${this.pointer.inference_time_ms}ms)` : "";
-        this.hudPointerCoords.textContent = `u: ${this.pointer.u.toFixed(1)}, v: ${this.pointer.v.toFixed(1)}${infStr}`;
+        this.hudPointerCoords.textContent = `u: ${this.pointer.snapped_u.toFixed(1)}, v: ${this.pointer.snapped_v.toFixed(1)}${infStr}`;
       } else {
         this.hudPointerCoords.textContent = "Pointeur : RECHERCHE...";
       }
@@ -469,7 +542,6 @@ class WebWhiteboardApplication {
   }
 }
 
-// Start application once DOM is ready
 window.addEventListener("DOMContentLoaded", () => {
   const app = new WebWhiteboardApplication();
   app.init();
